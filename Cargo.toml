@@ -7,3 +7,6 @@ edition = "2024"
 tokio = { version = "1.47.1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 rmcp = { version = "0.2.0", features = ["server"] }
+scraper = "0.24.0"
+reqwest = { version = "0.12" }
+html2md = "0.2.15"
