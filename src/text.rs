@@ -7,64 +7,11 @@
 //!
 
 use anyhow::{Result, anyhow};
-use htmd::HtmlToMarkdown;
+use htmd::{Element, HtmlToMarkdown};
 use reqwest::Client;
 use scraper::{Html, Selector};
 
 use crate::item_type::ItemType;
-
-/// Fetches Rust documentation from docs.rs and converts it to Markdown.
-///
-/// # Arguments
-///
-/// * `crate_name` - The name of the crate to fetch documentation for
-/// * `item_path` - Optional path to a specific item within the crate
-///
-/// # Returns
-///
-/// The documentation as Markdown text.
-///
-/// # Examples
-///
-/// ```no_run
-/// use rustdoc_text::fetch_online_docs;
-///
-/// # fn main() -> anyhow::Result<()> {
-/// let docs = fetch_online_docs("serde", None)?;
-/// println!("{}", docs);
-/// # Ok(())
-/// # }
-/// ```
-pub async fn fetch_online_docs(
-    crate_name: &str,
-    module_name: Option<&str>,
-    item_path: Option<&str>,
-) -> Result<String> {
-    let client = Client::new();
-
-    // Construct the URL for docs.rs
-    let mut url = format!("https://docs.rs/{}/latest/{}", crate_name, crate_name);
-    if let Some(module_name) = module_name {
-        url = format!("{}/{}", url, module_name);
-    }
-    if let Some(path) = item_path {
-        url = format!("{}/{}.html", url, path.replace("::", "/"));
-    }
-
-    // Fetch the HTML content
-    let response = client.get(&url).send().await?;
-
-    if !response.status().is_success() {
-        // dbg!(url);
-        return Err(anyhow!(
-            "Failed to fetch documentation. Status: {}",
-            response.status()
-        ));
-    }
-
-    let html_content = response.text().await?;
-    process_html_content(&html_content)
-}
 
 pub async fn rustdoc_fetch(resource: &str, item_type: ItemType) -> Result<String> {
     let is_module = item_type == ItemType::Module;
@@ -138,6 +85,8 @@ pub fn process_html_content(html: &str) -> Result<String> {
     // Convert HTML to Markdown using htmd
     let converter = HtmlToMarkdown::builder()
         .skip_tags(vec!["script", "style", "button"])
+        .add_handler(vec!["dt"], |el: Element| Some(format!("{}:\n", el.content)))
+        .add_handler(vec!["dd"], |el: Element| Some(format!("{}\n", el.content)))
         .build();
 
     let markdown = converter

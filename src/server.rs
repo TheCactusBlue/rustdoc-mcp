@@ -9,6 +9,8 @@ use rmcp::{
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
+use crate::item_type::ItemType;
+
 #[derive(Clone)]
 pub struct RustdocServer {
     tool_router: ToolRouter<Self>,
@@ -16,12 +18,10 @@ pub struct RustdocServer {
 
 #[derive(Serialize, Deserialize, JsonSchema)]
 pub struct FetchDocsRequest {
-    /// The name of the crate to fetch documentation for
-    crate_name: String,
+    /// The name of the crate to fetch documentation for (e.g. my_crate::submodule::MyStruct)
+    path: String,
     /// Optional module name within the crate
-    module: Option<String>,
-    /// Optional path to a specific item (e.g., "struct.MyStruct" or "trait.MyTrait")
-    item_path: Option<String>,
+    item_type: ItemType,
 }
 
 #[tool_router]
@@ -41,13 +41,7 @@ impl RustdocServer {
     ) -> Result<CallToolResult, ErrorData> {
         let req = params.0;
 
-        match crate::text::fetch_online_docs(
-            &req.crate_name,
-            req.module.as_deref(),
-            req.item_path.as_deref(),
-        )
-        .await
-        {
+        match crate::text::rustdoc_fetch(&req.path, req.item_type).await {
             Ok(docs) => Ok(CallToolResult::success(vec![Content::text(docs)])),
             Err(e) => Err(ErrorData::new(
                 ErrorCode::INTERNAL_ERROR,

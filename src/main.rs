@@ -3,42 +3,62 @@ pub mod server;
 pub mod text;
 
 use anyhow::Result;
-use clap::Parser;
+use clap::{Parser, Subcommand};
 use rmcp::{ServiceExt, transport};
+use termimad::{
+    MadSkin,
+    crossterm::style::{Attribute, Color},
+};
 use tracing_subscriber::EnvFilter;
+
+use crate::item_type::ItemType;
 
 #[derive(Parser)]
 #[command(name = "rustdoc-mcp")]
 #[command(about = "A CLI tool to fetch Rust documentation as Markdown")]
 #[command(version)]
 struct Cli {
-    #[arg(long)]
-    /// Run as an MCP server
-    server: bool,
+    #[command(subcommand)]
+    command: Commands,
+}
 
-    crate_name: Option<String>,
-    #[arg(short, long)]
-    module: Option<String>,
-    /// Optional path to specific item (e.g., "struct::MyStruct")
-    #[arg(short, long)]
-    item_path: Option<String>,
+#[derive(Subcommand)]
+enum Commands {
+    /// Run as an MCP server
+    Server,
+    /// Fetch documentation for a crate or item
+    Fetch {
+        /// The crate or item path to fetch documentation for
+        resource: String,
+        /// Optional type of item to fetch (e.g., struct, trait, module)
+        #[arg(short, long)]
+        item_type: ItemType,
+    },
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    if cli.server {
-        run_server().await?;
-    } else {
-        let crate_name = cli.crate_name.ok_or_else(|| {
-            anyhow::anyhow!("crate_name is required when not running in server mode")
-        })?;
+    match cli.command {
+        Commands::Server => {
+            run_server().await?;
+        }
+        Commands::Fetch {
+            resource,
+            item_type,
+        } => {
+            let docs = text::rustdoc_fetch(&resource, item_type).await?;
+            let mut skin = MadSkin::default();
 
-        let docs =
-            text::fetch_online_docs(&crate_name, cli.module.as_deref(), cli.item_path.as_deref())
-                .await?;
-        println!("{}", docs);
+            for h in &mut skin.headers {
+                h.add_attr(Attribute::Bold);
+                h.set_fg(Color::AnsiValue(172));
+            }
+
+            skin.print_text(&docs);
+            // println!("{}", docs);
+        }
     }
 
     Ok(())
