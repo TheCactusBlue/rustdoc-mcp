@@ -48,7 +48,7 @@ async fn main() -> Result<()> {
             resource,
             item_type,
         } => {
-            let docs = text::rustdoc_fetch(&resource, item_type).await?;
+            let docs = text::rustdoc_fetch(&resource, Some(item_type)).await?;
             let mut skin = MadSkin::default();
 
             for h in &mut skin.headers {
@@ -94,7 +94,7 @@ pub mod test {
         // );
         println!(
             "{}",
-            rustdoc_fetch("atrium_api::agent::Agent", ItemType::Struct)
+            rustdoc_fetch("atrium_api::agent::Agent", Some(ItemType::Struct))
                 .await
                 .unwrap()
         );

@@ -41,7 +41,7 @@ impl RustdocServer {
     ) -> Result<CallToolResult, ErrorData> {
         let req = params.0;
 
-        match crate::text::rustdoc_fetch(&req.path, req.item_type).await {
+        match crate::text::rustdoc_fetch(&req.path, Some(req.item_type)).await {
             Ok(docs) => Ok(CallToolResult::success(vec![Content::text(docs)])),
             Err(e) => Err(ErrorData::new(
                 ErrorCode::INTERNAL_ERROR,

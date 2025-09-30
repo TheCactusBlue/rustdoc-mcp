@@ -13,7 +13,17 @@ use scraper::{Html, Selector};
 
 use crate::item_type::ItemType;
 
-pub async fn rustdoc_fetch(resource: &str, item_type: ItemType) -> Result<String> {
+pub async fn rustdoc_fetch(resource: &str, item_type: Option<ItemType>) -> Result<String> {
+    let item_type = if let Some(item_type) = item_type {
+        item_type
+    } else {
+        todo!("infer");
+    };
+    let html_content = rustdoc_fetch_html(resource, item_type).await?;
+    process_html_content(&html_content)
+}
+
+pub async fn rustdoc_fetch_html(resource: &str, item_type: ItemType) -> Result<String> {
     let is_module = item_type == ItemType::Module;
 
     let client = Client::new();
@@ -57,7 +67,7 @@ pub async fn rustdoc_fetch(resource: &str, item_type: ItemType) -> Result<String
     }
 
     let html_content = response.text().await?;
-    process_html_content(&html_content)
+    Ok(html_content)
 }
 
 /// Process HTML content to extract and convert relevant documentation parts to Markdown.
