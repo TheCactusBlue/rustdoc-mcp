@@ -21,7 +21,7 @@ pub struct FetchDocsRequest {
     /// The name of the crate to fetch documentation for (e.g. my_crate::submodule::MyStruct)
     path: String,
     /// Optional module name within the crate
-    item_type: ItemType,
+    item_type: Option<ItemType>,
     /// Optional version of the crate (defaults to latest)
     version: Option<String>,
 }
@@ -43,7 +43,7 @@ impl RustdocServer {
     ) -> Result<CallToolResult, ErrorData> {
         let req = params.0;
 
-        match crate::text::rustdoc_fetch(&req.path, Some(req.item_type), req.version.as_deref()).await {
+        match crate::text::rustdoc_fetch(&req.path, req.item_type, req.version.as_deref()).await {
             Ok(docs) => Ok(CallToolResult::success(vec![Content::text(docs)])),
             Err(e) => Err(ErrorData::new(
                 ErrorCode::INTERNAL_ERROR,
