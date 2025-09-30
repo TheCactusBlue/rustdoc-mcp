@@ -142,7 +142,7 @@ pub fn process_html_content(html: &str) -> Result<String> {
 
     // Convert HTML to Markdown using htmd
     let converter = HtmlToMarkdown::builder()
-        .skip_tags(vec!["script", "style"])
+        .skip_tags(vec!["script", "style", "button"])
         .build();
 
     let markdown = converter
