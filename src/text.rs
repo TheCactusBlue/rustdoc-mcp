@@ -10,11 +10,6 @@ use anyhow::{Result, anyhow};
 use htmd::HtmlToMarkdown;
 use reqwest::Client;
 use scraper::{Html, Selector};
-use std::fs;
-use std::path::PathBuf;
-use std::process::Command;
-use strum_macros::{Display, EnumString};
-use tempfile::tempdir;
 
 use crate::item_type::ItemType;
 
