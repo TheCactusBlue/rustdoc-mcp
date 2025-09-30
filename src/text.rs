@@ -57,7 +57,7 @@ pub async fn fetch_online_docs(
     let response = client.get(&url).send().await?;
 
     if !response.status().is_success() {
-        dbg!(url);
+        // dbg!(url);
         return Err(anyhow!(
             "Failed to fetch documentation. Status: {}",
             response.status()
