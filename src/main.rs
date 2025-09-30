@@ -64,8 +64,19 @@ async fn run_server() -> Result<()> {
 
 #[cfg(test)]
 pub mod test {
-    #[test]
-    pub fn scratch() {
-        dbg!("lmao!");
+    use crate::{item_type::ItemType, text::rustdoc_fetch};
+
+    #[tokio::test]
+    pub async fn scratch() {
+        // println!(
+        //     "{}",
+        //     rustdoc_fetch("atrium_api", ItemType::Module).await.unwrap()
+        // );
+        println!(
+            "{}",
+            rustdoc_fetch("atrium_api::agent::Agent", ItemType::Struct)
+                .await
+                .unwrap()
+        );
     }
 }
