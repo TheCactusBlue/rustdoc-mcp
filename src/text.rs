@@ -37,13 +37,20 @@ use tempfile::tempdir;
 /// # Ok(())
 /// # }
 /// ```
-pub async fn fetch_online_docs(crate_name: &str, item_path: Option<&str>) -> Result<String> {
+pub async fn fetch_online_docs(
+    crate_name: &str,
+    module_name: Option<&str>,
+    item_path: Option<&str>,
+) -> Result<String> {
     let client = Client::new();
 
     // Construct the URL for docs.rs
     let mut url = format!("https://docs.rs/{}/latest/{}", crate_name, crate_name);
+    if let Some(module_name) = module_name {
+        url = format!("{}/{}", url, module_name);
+    }
     if let Some(path) = item_path {
-        url = format!("{}/{}", url, path.replace("::", "/"));
+        url = format!("{}/{}.html", url, path.replace("::", "/"));
     }
 
     // Fetch the HTML content
@@ -243,95 +250,4 @@ pub struct Config {
 
     /// Whether to fetch documentation from docs.rs instead of building locally.
     pub online: bool,
-}
-
-impl Config {
-    /// Create a new configuration with the specified crate name.
-    ///
-    /// # Arguments
-    ///
-    /// * `crate_name` - The name of the crate to fetch documentation for
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rustdoc_text::Config;
-    ///
-    /// let config = Config::new("serde");
-    /// assert_eq!(config.crate_name, "serde");
-    /// assert_eq!(config.online, false);
-    /// ```
-    pub fn new<S: Into<String>>(crate_name: S) -> Self {
-        Self {
-            crate_name: crate_name.into(),
-            item_path: None,
-            online: false,
-        }
-    }
-
-    /// Set the item path for the configuration.
-    ///
-    /// # Arguments
-    ///
-    /// * `item_path` - The item path within the crate
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rustdoc_text::Config;
-    ///
-    /// let config = Config::new("serde").with_item_path("Deserializer");
-    /// assert_eq!(config.item_path, Some("Deserializer".to_string()));
-    /// ```
-    pub fn with_item_path<S: Into<String>>(mut self, item_path: S) -> Self {
-        self.item_path = Some(item_path.into());
-        self
-    }
-
-    /// Set whether to fetch documentation from docs.rs.
-    ///
-    /// # Arguments
-    ///
-    /// * `online` - Whether to fetch documentation from docs.rs
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use rustdoc_text::Config;
-    ///
-    /// let config = Config::new("serde").with_online(true);
-    /// assert_eq!(config.online, true);
-    /// ```
-    pub fn with_online(mut self, online: bool) -> Self {
-        self.online = online;
-        self
-    }
-
-    /// Execute the configuration to fetch documentation.
-    ///
-    /// # Returns
-    ///
-    /// The documentation as Markdown text.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use rustdoc_text::Config;
-    ///
-    /// # fn main() -> anyhow::Result<()> {
-    /// let docs = Config::new("serde")
-    ///     .with_online(true)
-    ///     .with_item_path("Deserializer")
-    ///     .execute()?;
-    /// println!("{}", docs);
-    /// # Ok(())
-    /// # }
-    /// ```
-    pub async fn execute(&self) -> Result<String> {
-        if self.online {
-            fetch_online_docs(&self.crate_name, self.item_path.as_deref()).await
-        } else {
-            fetch_local_docs(&self.crate_name, self.item_path.as_deref())
-        }
-    }
 }
