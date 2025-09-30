@@ -41,7 +41,7 @@ pub async fn fetch_online_docs(crate_name: &str, item_path: Option<&str>) -> Res
     let client = Client::new();
 
     // Construct the URL for docs.rs
-    let mut url = format!("https://docs.rs/{}", crate_name);
+    let mut url = format!("https://docs.rs/{}/latest/{}", crate_name, crate_name);
     if let Some(path) = item_path {
         url = format!("{}/{}", url, path.replace("::", "/"));
     }
@@ -50,6 +50,7 @@ pub async fn fetch_online_docs(crate_name: &str, item_path: Option<&str>) -> Res
     let response = client.get(&url).send().await?;
 
     if !response.status().is_success() {
+        dbg!(url);
         return Err(anyhow!(
             "Failed to fetch documentation. Status: {}",
             response.status()

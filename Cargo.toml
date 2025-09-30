@@ -13,3 +13,4 @@ html2md = "0.2.15"
 htmd = "0.3.2"
 anyhow = "1.0.100"
 tempfile = "3.23.0"
+clap = { version = "4.0", features = ["derive"] }
