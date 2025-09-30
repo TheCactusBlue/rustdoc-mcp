@@ -36,6 +36,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "anyhow"
+version = "1.0.100"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
+
+[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -509,6 +515,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5419bdc4f6a9207fbeba6d11b604d481addf78ecd10c11ad51e76c2f6482748d"
 
 [[package]]
+name = "htmd"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4642ae72538a8d374109c5acf95c603732c736aace63c337ec2d3e42f7095854"
+dependencies = [
+ "html5ever 0.35.0",
+ "markup5ever_rcdom 0.35.0+unofficial",
+]
+
+[[package]]
 name = "html2md"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -517,7 +533,7 @@ dependencies = [
  "html5ever 0.27.0",
  "jni",
  "lazy_static",
- "markup5ever_rcdom",
+ "markup5ever_rcdom 0.3.0",
  "percent-encoding",
  "regex",
 ]
@@ -957,7 +973,19 @@ dependencies = [
  "html5ever 0.27.0",
  "markup5ever 0.12.1",
  "tendril",
- "xml5ever",
+ "xml5ever 0.18.1",
+]
+
+[[package]]
+name = "markup5ever_rcdom"
+version = "0.35.0+unofficial"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c8bcd53df4748257345b8bc156d620340ce0f015ec1c7ef1cff475543888a31d"
+dependencies = [
+ "html5ever 0.35.0",
+ "markup5ever 0.35.0",
+ "tendril",
+ "xml5ever 0.35.0",
 ]
 
 [[package]]
@@ -1389,11 +1417,14 @@ checksum = "56f7d92ca342cea22a06f2121d944b4fd82af56988c270852495420f961d4ace"
 name = "rustdoc-mcp"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "htmd",
  "html2md",
  "reqwest",
  "rmcp",
  "scraper",
  "serde",
+ "tempfile",
  "tokio",
 ]
 
@@ -2394,6 +2425,16 @@ dependencies = [
  "log",
  "mac",
  "markup5ever 0.12.1",
+]
+
+[[package]]
+name = "xml5ever"
+version = "0.35.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee3f1e41afb31a75aef076563b0ad3ecc24f5bd9d12a72b132222664eb76b494"
+dependencies = [
+ "log",
+ "markup5ever 0.35.0",
 ]
 
 [[package]]
