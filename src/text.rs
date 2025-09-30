@@ -13,7 +13,10 @@ use scraper::{Html, Selector};
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
+use strum_macros::{Display, EnumString};
 use tempfile::tempdir;
+
+use crate::item_type::ItemType;
 
 /// Fetches Rust documentation from docs.rs and converts it to Markdown.
 ///
@@ -68,104 +71,50 @@ pub async fn fetch_online_docs(
     process_html_content(&html_content)
 }
 
-/// Builds and fetches Rust documentation locally and converts it to Markdown.
-///
-/// # Arguments
-///
-/// * `crate_name` - The name of the crate to fetch documentation for
-/// * `item_path` - Optional path to a specific item within the crate
-///
-/// # Returns
-///
-/// The documentation as Markdown text.
-///
-/// # Examples
-///
-/// ```no_run
-/// use rustdoc_text::fetch_local_docs;
-///
-/// # fn main() -> anyhow::Result<()> {
-/// let docs = fetch_local_docs("serde", None)?;
-/// println!("{}", docs);
-/// # Ok(())
-/// # }
-/// ```
-pub fn fetch_local_docs(crate_name: &str, item_path: Option<&str>) -> Result<String> {
-    // Create a temporary directory for the operation
-    let temp_dir = tempdir()?;
-    let temp_path = temp_dir.path();
+pub async fn rustdoc_fetch(resource: &str, item_type: ItemType) -> Result<String> {
+    let is_module = item_type == ItemType::Module;
 
-    // Check if we're in a cargo project
-    let current_dir = std::env::current_dir()?;
-    let is_cargo_project = current_dir.join("Cargo.toml").exists();
+    let client = Client::new();
 
-    let doc_path: PathBuf;
-
-    if is_cargo_project {
-        // We're in a cargo project, build docs for the current project
-        let status = Command::new("cargo")
-            .args(["doc", "--no-deps"])
-            .current_dir(&current_dir)
-            .status()?;
-
-        if !status.success() {
-            return Err(anyhow!("Failed to build documentation with cargo doc"));
-        }
-
-        doc_path = current_dir.join("target").join("doc");
-    } else {
-        // Try to build documentation for an external crate
-        let status = Command::new("cargo")
-            .args(["new", "--bin", "temp_project"])
-            .current_dir(temp_path)
-            .status()?;
-
-        if !status.success() {
-            return Err(anyhow!("Failed to create temporary cargo project"));
-        }
-
-        // Add the crate as a dependency
-        let temp_cargo_toml = temp_path.join("temp_project").join("Cargo.toml");
-        let mut cargo_toml_content = fs::read_to_string(&temp_cargo_toml)?;
-        cargo_toml_content.push_str(&format!("\n[dependencies]\n{} = \"*\"\n", crate_name));
-        fs::write(&temp_cargo_toml, cargo_toml_content)?;
-
-        // Build the documentation
-        let status = Command::new("cargo")
-            .args(["doc", "--no-deps"])
-            .current_dir(temp_path.join("temp_project"))
-            .status()?;
-
-        if !status.success() {
-            return Err(anyhow!(
-                "Failed to build documentation for crate: {}",
-                crate_name
-            ));
-        }
-
-        doc_path = temp_path.join("temp_project").join("target").join("doc");
+    let mut resource: Vec<_> = resource.split("::").collect();
+    if !is_module && resource.len() < 1 {
+        return Err(anyhow!("The top level resource is always a module"));
     }
+    let item = if !is_module { resource.pop() } else { None };
 
-    // Find the HTML files
-    let crate_doc_path = doc_path.join(crate_name.replace('-', "_"));
-
-    if !crate_doc_path.exists() {
-        return Err(anyhow!("Documentation not found for crate: {}", crate_name));
-    }
-
-    let index_path = if let Some(path) = item_path {
-        crate_doc_path
-            .join(path.replace("::", "/"))
-            .join("index.html")
+    // Construct the URL for docs.rs
+    let url = if let Some(item) = item {
+        format!(
+            "https://docs.rs/{}/latest/{}/{}.{}.html",
+            resource[0],
+            resource.join("/"),
+            item_type.to_string(),
+            item
+        )
     } else {
-        crate_doc_path.join("index.html")
+        format!(
+            "https://docs.rs/{}/latest/{}/index.html",
+            resource[0],
+            resource.join("/")
+        )
     };
 
-    if !index_path.exists() {
-        return Err(anyhow!("Documentation not found at path: {:?}", index_path));
+    // if let Some(path) = item_path {
+    //     url = format!("{}/{}.html", url, path.replace("::", "/"));
+    // }
+
+    // Fetch the HTML content
+    let response = client.get(&url).send().await?;
+
+    if !response.status().is_success() {
+        // dbg!(url);
+        return Err(anyhow!(
+            "Failed to fetch documentation. Status: {}",
+            response.status()
+        ));
     }
 
-    let html_content = fs::read_to_string(index_path)?;
+    let html_content = response.text().await?;
     process_html_content(&html_content)
 }
 
