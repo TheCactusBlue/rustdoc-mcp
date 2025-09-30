@@ -20,7 +20,7 @@ pub struct RustdocServer {
 pub struct FetchDocsRequest {
     /// The name of the crate to fetch documentation for (e.g. my_crate::submodule::MyStruct)
     path: String,
-    /// Optional module name within the crate
+    /// Type for the item being fetched; Usually can be automatically inferred, but if there are duplicates, specify to avoid conflicts
     item_type: Option<ItemType>,
     /// Optional version of the crate (defaults to latest)
     version: Option<String>,
