@@ -6,6 +6,8 @@
 //! in plain text format.
 //!
 
+use std::str::FromStr;
+
 use anyhow::{Result, anyhow};
 use htmd::{Element, HtmlToMarkdown};
 use reqwest::Client;
@@ -17,10 +19,40 @@ pub async fn rustdoc_fetch(resource: &str, item_type: Option<ItemType>) -> Resul
     let item_type = if let Some(item_type) = item_type {
         item_type
     } else {
-        todo!("infer");
+        infer_item_type(resource).await?
     };
     let html_content = rustdoc_fetch_html(resource, item_type).await?;
     process_html_content(&html_content)
+}
+
+pub async fn infer_item_type(resource: &str) -> Result<ItemType> {
+    let mut path: Vec<_> = resource.split("::").collect();
+    if path.len() <= 1 {
+        return Ok(ItemType::Module);
+    }
+    let _ = path.pop();
+    let path = path.join("::");
+    let html = rustdoc_fetch_html(&path, ItemType::Module).await?;
+    let document = Html::parse_document(&html);
+    let main_content_selector = Selector::parse("#main-content").unwrap();
+    let attrib_selector = Selector::parse(&format!("[title$=\" {}\"]", resource)).unwrap();
+
+    let main_content = document
+        .select(&main_content_selector)
+        .next()
+        .ok_or_else(|| anyhow!("Could not find main content section"))?;
+
+    for el in main_content.select(&attrib_selector) {
+        let a = el
+            .attr("class")
+            .map(|x| ItemType::from_str(x).ok())
+            .flatten();
+        if let Some(a) = a {
+            return Ok(a);
+        }
+    }
+
+    Err(anyhow!("Could not find the resource"))
 }
 
 pub async fn rustdoc_fetch_html(resource: &str, item_type: ItemType) -> Result<String> {
@@ -59,7 +91,6 @@ pub async fn rustdoc_fetch_html(resource: &str, item_type: ItemType) -> Result<S
     let response = client.get(&url).send().await?;
 
     if !response.status().is_success() {
-        // dbg!(url);
         return Err(anyhow!(
             "Failed to fetch documentation. Status: {}",
             response.status()

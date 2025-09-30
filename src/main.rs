@@ -32,7 +32,7 @@ enum Commands {
         resource: String,
         /// Optional type of item to fetch (e.g., struct, trait, module)
         #[arg(short, long)]
-        item_type: ItemType,
+        item_type: Option<ItemType>,
     },
 }
 
@@ -48,7 +48,7 @@ async fn main() -> Result<()> {
             resource,
             item_type,
         } => {
-            let docs = text::rustdoc_fetch(&resource, Some(item_type)).await?;
+            let docs = text::rustdoc_fetch(&resource, item_type).await?;
             let mut skin = MadSkin::default();
 
             for h in &mut skin.headers {
