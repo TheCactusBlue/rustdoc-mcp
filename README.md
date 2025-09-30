@@ -1,4 +1,4 @@
-# rustdoc-mcp
+# 🦀 rustdoc-mcp 🦀
 
 A CLI tool and MCP (Model Context Protocol) server for fetching Rust documentation from docs.rs as Markdown.
 
@@ -41,6 +41,7 @@ rustdoc-mcp server
 ```
 
 The server exposes a `fetch_docs` tool that accepts:
+
 - `path`: The crate or item path (e.g., `my_crate::submodule::MyStruct`)
 - `item_type`: The type of item (e.g., `struct`, `trait`, `module`, `enum`)
 
