@@ -33,6 +33,9 @@ enum Commands {
         /// Optional type of item to fetch (e.g., struct, trait, module)
         #[arg(short, long)]
         item_type: Option<ItemType>,
+        /// Optional version of the crate (defaults to latest)
+        #[arg(short, long)]
+        version: Option<String>,
     },
 }
 
@@ -47,8 +50,9 @@ async fn main() -> Result<()> {
         Commands::Fetch {
             resource,
             item_type,
+            version,
         } => {
-            let docs = text::rustdoc_fetch(&resource, item_type).await?;
+            let docs = text::rustdoc_fetch(&resource, item_type, version.as_deref()).await?;
             let mut skin = MadSkin::default();
 
             for h in &mut skin.headers {
@@ -94,7 +98,7 @@ pub mod test {
         // );
         println!(
             "{}",
-            rustdoc_fetch("atrium_api::agent::Agent", Some(ItemType::Struct))
+            rustdoc_fetch("atrium_api::agent::Agent", Some(ItemType::Struct), None)
                 .await
                 .unwrap()
         );

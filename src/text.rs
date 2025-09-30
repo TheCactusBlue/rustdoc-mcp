@@ -15,24 +15,28 @@ use scraper::{Html, Selector};
 
 use crate::item_type::ItemType;
 
-pub async fn rustdoc_fetch(resource: &str, item_type: Option<ItemType>) -> Result<String> {
+pub async fn rustdoc_fetch(
+    resource: &str,
+    item_type: Option<ItemType>,
+    version: Option<&str>,
+) -> Result<String> {
     let item_type = if let Some(item_type) = item_type {
         item_type
     } else {
-        infer_item_type(resource).await?
+        infer_item_type(resource, version).await?
     };
-    let html_content = rustdoc_fetch_html(resource, item_type).await?;
+    let html_content = rustdoc_fetch_html(resource, item_type, version).await?;
     process_html_content(&html_content)
 }
 
-pub async fn infer_item_type(resource: &str) -> Result<ItemType> {
+pub async fn infer_item_type(resource: &str, version: Option<&str>) -> Result<ItemType> {
     let mut path: Vec<_> = resource.split("::").collect();
     if path.len() <= 1 {
         return Ok(ItemType::Module);
     }
     let _ = path.pop();
     let path = path.join("::");
-    let html = rustdoc_fetch_html(&path, ItemType::Module).await?;
+    let html = rustdoc_fetch_html(&path, ItemType::Module, version).await?;
     let document = Html::parse_document(&html);
     let main_content_selector = Selector::parse("#main-content").unwrap();
     let attrib_selector = Selector::parse(&format!("[title$=\" {}\"]", resource)).unwrap();
@@ -55,7 +59,11 @@ pub async fn infer_item_type(resource: &str) -> Result<ItemType> {
     Err(anyhow!("Could not find the resource"))
 }
 
-pub async fn rustdoc_fetch_html(resource: &str, item_type: ItemType) -> Result<String> {
+pub async fn rustdoc_fetch_html(
+    resource: &str,
+    item_type: ItemType,
+    version: Option<&str>,
+) -> Result<String> {
     let is_module = item_type == ItemType::Module;
 
     let client = Client::new();
@@ -66,19 +74,23 @@ pub async fn rustdoc_fetch_html(resource: &str, item_type: ItemType) -> Result<S
     }
     let item = if !is_module { resource.pop() } else { None };
 
+    let version_str = version.unwrap_or("latest");
+
     // Construct the URL for docs.rs
     let url = if let Some(item) = item {
         format!(
-            "https://docs.rs/{}/latest/{}/{}.{}.html",
+            "https://docs.rs/{}/{}/{}/{}.{}.html",
             resource[0],
+            version_str,
             resource.join("/"),
             item_type.to_string(),
             item
         )
     } else {
         format!(
-            "https://docs.rs/{}/latest/{}/index.html",
+            "https://docs.rs/{}/{}/{}/index.html",
             resource[0],
+            version_str,
             resource.join("/")
         )
     };
