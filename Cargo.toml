@@ -10,7 +10,6 @@ schemars = "0.8"
 rmcp = { version = "0.2.0", features = ["server", "macros", "transport-io"] }
 scraper = "0.24.0"
 reqwest = { version = "0.12" }
-html2md = "0.2.15"
 htmd = "0.3.2"
 anyhow = "1.0.100"
 tempfile = "3.23.0"
