@@ -26,6 +26,12 @@ pub struct FetchDocsRequest {
     version: Option<String>,
 }
 
+#[derive(Serialize, Deserialize, JsonSchema)]
+pub struct SearchCratesRequest {
+    /// The search query to find crates on docs.rs
+    query: String,
+}
+
 #[tool_router]
 impl RustdocServer {
     pub fn new() -> Self {
@@ -52,6 +58,25 @@ impl RustdocServer {
             )),
         }
     }
+
+    #[tool(
+        description = "Search for crates on docs.rs. Returns a list of matching crates with their versions and descriptions."
+    )]
+    async fn search_crates(
+        &self,
+        params: Parameters<SearchCratesRequest>,
+    ) -> Result<CallToolResult, ErrorData> {
+        let req = params.0;
+
+        match crate::search::rustdoc_search(&req.query).await {
+            Ok(results) => Ok(CallToolResult::success(vec![Content::text(results)])),
+            Err(e) => Err(ErrorData::new(
+                ErrorCode::INTERNAL_ERROR,
+                format!("Failed to search crates: {}", e),
+                None,
+            )),
+        }
+    }
 }
 
 #[tool_handler]
@@ -66,7 +91,7 @@ impl ServerHandler for RustdocServer {
                 .build(),
             server_info: Implementation::from_build_env(),
             instructions: Some(
-                "This server provides tools for fetching docs from Docs.rs Tools: fetch_docs."
+                "This server provides tools for fetching docs from docs.rs. Tools: fetch_docs, search_crates."
                     .to_string(),
             ),
         }

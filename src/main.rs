@@ -1,4 +1,5 @@
 pub mod item_type;
+pub mod search;
 pub mod server;
 pub mod text;
 
@@ -37,6 +38,11 @@ enum Commands {
         #[arg(short, long)]
         version: Option<String>,
     },
+    /// Search for crates on docs.rs
+    Search {
+        /// The search query
+        query: String,
+    },
 }
 
 #[tokio::main]
@@ -53,19 +59,26 @@ async fn main() -> Result<()> {
             version,
         } => {
             let docs = text::rustdoc_fetch(&resource, item_type, version.as_deref()).await?;
-            let mut skin = MadSkin::default();
-
-            for h in &mut skin.headers {
-                h.add_attr(Attribute::Bold);
-                h.set_fg(Color::AnsiValue(172));
-            }
-
-            skin.print_text(&docs);
-            // println!("{}", docs);
+            print_markdown(&docs);
+        }
+        Commands::Search { query } => {
+            let results = search::rustdoc_search(&query).await?;
+            print_markdown(&results);
         }
     }
 
     Ok(())
+}
+
+fn print_markdown(text: &str) {
+    let mut skin = MadSkin::default();
+
+    for h in &mut skin.headers {
+        h.add_attr(Attribute::Bold);
+        h.set_fg(Color::AnsiValue(172));
+    }
+
+    skin.print_text(text);
 }
 
 async fn run_server() -> Result<()> {
