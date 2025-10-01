@@ -1,4 +1,5 @@
 pub mod item_type;
+pub mod markdown;
 pub mod search;
 pub mod server;
 pub mod text;

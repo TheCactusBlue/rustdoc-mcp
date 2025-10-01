@@ -9,7 +9,7 @@ use htmd::{Element, HtmlToMarkdown};
 use reqwest::Client;
 use scraper::{Html, Selector};
 
-use crate::text::clean_markdown;
+use crate::markdown::html_to_md;
 
 pub async fn rustdoc_search(query: &str) -> Result<String> {
     let html_content = rustdoc_search_html(query).await?;
@@ -58,22 +58,8 @@ pub fn process_search_html(html: &str) -> Result<String> {
         .next()
         .ok_or_else(|| anyhow!("Could not find main content section"))?;
 
-    // Get HTML content
     let html_content = main_content.inner_html();
-
-    // Convert HTML to Markdown using htmd
-    let converter = HtmlToMarkdown::builder()
-        .skip_tags(vec!["script", "style", "button"])
-        .add_handler(vec!["dt"], |el: Element| Some(format!("{}:\n", el.content)))
-        .add_handler(vec!["dd"], |el: Element| Some(format!("{}\n", el.content)))
-        .build();
-
-    let markdown = converter
-        .convert(&html_content)
-        .map_err(|e| anyhow!("HTML to Markdown conversion failed: {}", e))?;
-
-    // Clean up the markdown (replace multiple newlines, etc.)
-    let cleaned_text = clean_markdown(&markdown);
+    let cleaned_text = html_to_md(&html_content)?;
 
     Ok(cleaned_text)
 }
